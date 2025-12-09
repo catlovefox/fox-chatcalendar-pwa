@@ -1,0 +1,2268 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <title>Chat Calendar</title>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#020617" />
+    <link rel="manifest" href="manifest.json" />
+    <link rel="icon" href="icon-192.png" />
+
+    <style>
+:root {
+  --bg-gradient-top: #f2f2f7;
+  --bg-gradient-bottom: #ffffff;
+  --card-bg: rgba(255, 255, 255, 0.9);
+  --card-border: rgba(15, 23, 42, 0.06);
+  --card-radius: 24px;
+  --card-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+  --accent: #007aff; /* iOS 蓝 */
+  --accent-soft: rgba(0, 122, 255, 0.08);
+  --text-primary: #111827;
+  --text-secondary: #4b5563;
+  --muted: #9ca3af;
+  --danger: #fb7185;
+
+  --top-bar-height: 52px;
+  --safe-horizontal: 15px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+  background: linear-gradient(180deg, var(--bg-gradient-top), var(--bg-gradient-bottom));
+  color: var(--text-primary);
+}
+
+#app-root {
+  min-height: 100vh;
+  position: relative;
+  color: var(--text-primary);
+}
+
+/* 顶部导航 */
+
+.top-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--top-bar-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--safe-horizontal);
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(18px);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+  z-index: 10;
+}
+
+.top-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.icon-button {
+  border: none;
+  background: none;
+  padding: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  touch-action: manipulation;
+  color: inherit;
+}
+
+/* 专门给左上角“三”这个按钮用的样式 */
+.icon-button-menu {
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1;
+  padding-top: 2px; /* 稍微往下压一点，让“三”居中一点 */
+}
+
+.icon-button:active {
+  background: rgba(148, 163, 184, 0.2);
+}
+
+.icon-bar {
+  display: block;
+  width: 14px;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--text-primary);
+  margin: 1.5px 0;
+}
+
+.avatar-button .avatar-circle {
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 30% 0%, #e0edff 0, #ffffff 60%);
+}
+
+.avatar-glyph {
+  font-size: 14px;
+}
+
+/* 屏幕容器 */
+
+.screen {
+  min-height: 100vh;
+  padding-top: var(--top-bar-height);
+}
+
+.screen-calendar {
+  position: relative;
+  overflow: hidden;
+}
+
+.background-layer {
+  position: fixed;
+  inset: 0;
+  background:
+    url("bg-winter.jpg") center/cover no-repeat;
+  z-index: -1;
+}
+
+/* 日历主卡片 */
+
+.calendar-card {
+  margin: 100px var(--safe-horizontal);
+  border-radius: var(--card-radius);
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--card-shadow);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 顶部蓝色头部整块 */
+.card-header {
+  background: #EEF9FF;                 /* ← 头部底色：在这里换颜色 */
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+  min-height: 100px;                    /* ← 头部高度，想更矮/更高自己改 */
+  padding: 0 16px;
+  display: flex;                       /* 让整个头部成为 flex 容器 */
+  align-items: center;                 /* 垂直居中里面所有内容 */
+}
+
+/* 里面的左右结构：左边文字 / 右边按钮 */
+.card-header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+}
+
+/* 左边三行文字整体 */
+.card-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  justify-content: center;            /* 在蓝色块里垂直居中对齐 */
+}
+
+/* 第一行：November❤Night 这一行 */
+.calendar-title {
+  font-size: 20px;                     /* ← 这里改标题字号，比如 18 / 20 / 22 */
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--accent);                /* 用重点色，想固定就改成 #111827 */
+}
+
+/* 第二行：年月，比如 2025年12月 */
+.month-label {
+  font-size: 14px;                     /* ← 在这里改年月字号，11~14 都可 */
+  font-weight: 700;
+  color: #FFFFFF;                      /* 想更淡就用 #4b5563 */
+}
+
+/* 右边两个切换月份按钮区域 */
+.card-header-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 左右切月按钮：尺寸和右下角 + 一致 */
+.month-nav-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  border: none;
+  background: var(--accent);           /* 跟重点色联动 */
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;                     /* ← 箭头大小在这里调 */
+  cursor: pointer;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0);
+}
+
+.month-nav-btn:active {
+  transform: translateY(1px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.24);
+}
+
+
+.month-nav-btn:active {
+  transform: translateY(1px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.24);
+}
+
+.card-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.month-label {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text-primary);
+}
+
+.card-hero {
+  display: none;
+}
+
+.card-body {
+  padding: 12px 10px 4px;
+  background: #ffffff; /* 主体白色区域 */
+}
+
+
+.weekday-row {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.weekday-row span {
+  text-align: center;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  grid-auto-rows: 64px;
+  gap: 4px;
+}
+
+/* 日历小格 */
+
+.day-cell {
+  position: relative;
+  border-radius: 14px;
+  padding: 6px 8px 1px;
+  font-size: 11px;
+  background: #f2f2f2; /* 日历小格子颜色 */
+  border: 1px solid rgba(15, 23, 42, 0.04);
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  text-align: left;
+  color: var(--text-primary);
+}
+
+.day-cell.empty {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.day-cell-date {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-top: -2px;    /* 轻轻往下推一点 */
+}
+
+.day-cell-count {
+  margin-top: 6px;          /* 间距稍微缩一点 */
+  font-size: 8px;           /* ✅ 从 11px 改成 9px */
+  text-align: center;
+  white-space: nowrap;      /* 仍然强制一行 */
+  text-overflow: ellipsis;  /* 超出就省略号，不撑破格子 */
+  overflow: hidden;
+  color: var(--text-primary);
+}
+
+.day-cell-dot-wrapper {
+  margin-top: auto;
+  display: flex;
+  justify-content: flex-end;
+  min-height: 16px;
+  padding-bottom: -3px;   /* ✅ 圆点离底边远一点 */
+}
+
+.day-cell-dot {
+  min-width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  font-size: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #f3f4f6;
+  color: var(--text-secondary);
+  margin-right: -3px;     /* ✅圆点离右边远一点 */
+}
+
+.day-cell.has-data {
+  /* 去掉原来的渐变，只保留略微强调的边框 */
+  background: #ffffff;                /* 白色 */
+  border-color: #E6E6E6;   /* 轻轻提示“这里有聊天记录” */
+  cursor: pointer;
+}
+
+/* 没有聊天记录的格子：不响应点击 */
+.day-cell:not(.has-data) {
+  cursor: default;       /* 鼠标是普通箭头 */
+  pointer-events: none;  /* ✅ 彻底禁止点击 */
+}
+
+.day-cell.today {
+  border-color: var(--accent);
+}
+
+.day-cell.selected {
+  background: var(--accent);          /* ✅ 整块用重点色 */
+  border-color: var(--accent);
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.25);
+  color: #ffffff;                     /* 默认文字改成白色 */
+}
+
+/* 被选中时，日期 + 中间的条数文字都反白 */
+.day-cell.selected .day-cell-date,
+.day-cell.selected .day-cell-count {
+  color: #ffffff;
+}
+
+/* 右下角小圆点：白底 + 重点色数字，形成“反白”效果 */
+.day-cell.selected .day-cell-dot {
+  background: #ffffff;
+  color: var(--accent);
+}
+
+.card-footer {
+  padding: 10px 12px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid rgba(15, 23, 42, 0.04);
+}
+
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.legend-swatch {
+  width: 12px;
+  height: 8px;
+  border-radius: 999px;
+}
+
+.legend-selected {
+  background: var(--accent);
+}
+
+.legend-today {
+  background: rgba(148, 163, 184, 0.9);
+}
+
+.legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.8);
+}
+
+/* 导入按钮 FAB */
+
+.fab {
+  position: relative;
+  border: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 12px 24px rgba(0, 122, 255, 0.1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #ffffff;
+}
+
+.fab-plus {
+  font-size: 16px;
+  line-height: 1;
+  margin-top: -1px;
+}
+
+.fab:active {
+  transform: translateY(1px);
+  box-shadow: 0 8px 18px rgba(0, 122, 255, 0.3);
+}
+
+/* 当日详情页 */
+
+.screen-day {
+  background: linear-gradient(180deg, var(--bg-gradient-top), var(--bg-gradient-bottom));
+  display: flex;
+  flex-direction: column;
+}
+
+.sub-header {
+  height: var(--top-bar-height);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 var(--safe-horizontal);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.sub-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.back-button {
+  font-size: 18px;
+  color: var(--text-primary);
+}
+
+.day-content {
+  flex: 1;
+  padding: 10px var(--safe-horizontal) 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  color: var(--text-primary);
+}
+
+.empty-state {
+  font-size: 13px;
+  color: var(--muted);
+  text-align: center;
+  margin-top: 40px;
+}
+
+.bubble-row {
+  display: flex;
+}
+
+.bubble-row.user {
+  justify-content: flex-end;
+}
+
+.bubble-row.assistant {
+  justify-content: flex-start;
+}
+
+.bubble-row.system {
+  justify-content: center;
+}
+
+.bubble {
+  max-width: 78%;
+  padding: 8px 10px;
+  border-radius: 16px;
+  font-size: 13px;
+  line-height: 1.4;
+  position: relative;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+.bubble-user {
+  background: #e5f2ff;
+  border: 1px solid rgba(0, 122, 255, 0.4);
+}
+
+.bubble-assistant {
+  background: #f3f4f6;
+  border: 1px solid rgba(148, 163, 184, 0.6);
+}
+
+.bubble-system {
+  background: #e5e7eb;
+  color: #111827;
+  border-radius: 999px;
+  font-size: 11px;
+}
+
+.bubble-meta {
+  margin-top: 3px;
+  font-size: 10px;
+  color: var(--muted);
+  text-align: right;
+}
+
+/* 底部弹出更多 */
+
+/* ===== 当日聊天界面 ===== */
+
+.screen-day {
+  background: linear-gradient(180deg, #f3f4f6 0%, #ffffff 18%);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 顶部返回栏 */
+.sub-header {
+  height: 48px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(8px);
+}
+
+.back-button {
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 16px;
+}
+
+.sub-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #111827;
+}
+
+/* 聊天内容区 */
+.day-content {
+  flex: 1;
+  padding: 12px 10px 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* 每一行气泡的基础布局 */
+.bubble-row {
+  display: flex;
+  gap: 6px;
+}
+
+/* 左：助手气泡一列 */
+.bubble-row.assistant {
+  justify-content: flex-start;
+}
+
+/* 右：用户气泡一列 */
+.bubble-row.user {
+  justify-content: flex-end;
+}
+
+/* 中：系统提示一列 */
+.bubble-row.system {
+  justify-content: center;
+}
+
+/* 气泡本体 */
+.bubble {
+  max-width: 80%;
+  border-radius: 18px;
+  padding: 8px 10px;
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* 左侧助手气泡：白底 */
+.bubble-assistant {
+  background: #ffffff;
+  color: #111827;
+}
+
+/* 右侧用户气泡：重点色 */
+.bubble-user {
+  background: var(--accent);
+  color: #ffffff;
+}
+
+/* 文本部分 */
+.bubble-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* 气泡内富文本样式 */
+.bubble-text strong {
+  font-weight: 600;
+}
+
+.bubble-text em {
+  font-style: normal;
+  color: var(--accent);
+}
+
+.bubble-text code {
+  font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Courier New",
+    monospace;
+  font-size: 12px;
+  padding: 1px 4px;
+  border-radius: 4px;
+  background: rgba(15, 23, 42, 0.06);
+}
+
+/* > 引用 行 */
+.msg-quote {
+  border-left: 3px solid rgba(148, 163, 184, 0.8);
+  padding-left: 8px;
+  margin: 4px 0;
+  color: #4b5563;
+  font-size: 13px;
+}
+
+/* 气泡下方的 meta：名字 · 时间 · 会话 */
+.bubble-meta {
+  margin-top: 2px;
+  font-size: 11px;
+  opacity: 0.9;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.bubble-meta span::after {
+  content: "·";
+  margin: 0 2px;
+}
+
+.bubble-meta span:last-child::after {
+  content: "";
+}
+
+/* meta 中的角色名用一点点字重区分 */
+.bubble-name {
+  font-weight: 500;
+}
+
+/* 系统消息：中间灰条 */
+.system-label {
+  max-width: 90%;
+  font-size: 12px;
+  color: #6b7280;
+  background: rgba(243, 244, 246, 0.9);
+  border-radius: 999px;
+  padding: 4px 10px;
+  text-align: center;
+}
+
+.system-meta {
+  margin-top: 2px;
+  font-size: 11px;
+  color: #9ca3af;
+  text-align: center;
+}
+
+.bottom-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.2);
+  backdrop-filter: blur(8px);
+  z-index: 30;
+}
+
+.bottom-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  border-radius: 18px 18px 0 0;
+  background: rgba(255, 255, 255, 0.98);
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 -18px 40px rgba(15, 23, 42, 0.1);
+  padding: 12px var(--safe-horizontal) 24px; /* 稍微多一点内边距 */
+  min-height: 35vh;                          /* 关键：最少占屏幕 45% 高 */
+}
+
+/* 显示设置弹窗遮罩 */
+.settings-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.35);
+  backdrop-filter: blur(10px);
+  z-index: 50;
+}
+
+/* 弹窗本体 */
+.settings-modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 60;
+  pointer-events: none; /* 默认不抢事件，内部再开启 */
+}
+
+.settings-inner {
+  width: 88%;
+  max-width: 360px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 20px 45px rgba(15, 23, 42, 0.35);
+  padding: 16px 18px 18px;
+  pointer-events: auto;
+}
+
+/* 头部区域 */
+.settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.settings-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.settings-close {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: none;
+  background: #e5e7eb;
+  color: #111827;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.settings-close:active {
+  background: #d1d5db;
+}
+
+.settings-desc {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 0 0 10px;
+}
+
+/* 表单 */
+.settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.settings-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.settings-input {
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.6);
+  padding: 0 12px;
+  font-size: 13px;
+  outline: none;
+}
+
+.settings-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent-soft);
+}
+
+/* 颜色选择 */
+.settings-accent-options {
+  display: flex;
+  gap: 10px;
+  margin-top: 2px;
+}
+
+.accent-swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background: #111827;
+  cursor: pointer;
+}
+
+/* 四个具体颜色：黑 / 紫 / 蓝绿 / 粉 */
+/* 01 夜空蓝 */
+.accent-swatch[data-accent-key="black"] {
+  background: #1e293b; /* midnight blue */
+}
+
+/* 02 葡萄紫 */
+.accent-swatch[data-accent-key="purple"] {
+  background: #5C1A87; /* indigo */
+}
+
+/* 03 森林绿 */
+.accent-swatch[data-accent-key="teal"] {
+  background: #0B6C5B; /* mint teal */
+}
+
+/* 04 糖霜粉 */
+.accent-swatch[data-accent-key="pink"] {
+  background: #ED778D; /* soft rose */
+}
+
+/* 当前选中颜色，加白边 */
+.accent-swatch.selected {
+  border-color: #ffffff;
+  box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.35);
+}
+
+/* 底部按钮 */
+.settings-actions {
+  margin-top: 8px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.settings-save {
+  min-width: 80px;
+  height: 34px;
+  border-radius: 999px;
+  border: none;
+  background: #047857;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.settings-save:active {
+  background: #065f46;
+}
+
+
+.sheet-handle {
+  width: 36px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.6);
+  margin: 4px auto 10px;
+}
+
+.sheet-title {
+  font-size: 14px;
+  font-weight: 500;
+  margin: 0 0 8px;
+  color: var(--text-primary);
+}
+
+.sheet-item {
+  width: 100%;
+  text-align: left;
+  padding: 10px 4px;
+  border-radius: 12px;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.sheet-item:active {
+  background: rgba(0, 122, 255, 0.12);
+}
+
+/* 响应式微调：特别矮的屏幕减少上下外边距 */
+
+@media (max-height: 700px) {
+  .calendar-card {
+    margin-top: 90px;
+    margin-bottom: 80px;
+  }
+}
+
+/* 聊天界面：把小导航条 + 头部日期信息卡都隐藏 */
+.sub-header,
+.day-summary,
+#day-summary {
+  display: none;
+}
+
+.screen-day .day-content {
+  padding-top: 12px;
+}
+
+/* 右下角悬浮“回家”按钮，仅负责样式，暂时不写功能 */
+.back-floating {
+  position: fixed;                      /* 固定在视口，不跟内容滚动 */
+  right: 16px;                          /* 距离右边 16px */
+  bottom: 24px;                         /* 距离底部 24px */
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: none;
+  background: var(--accent, #007aff);   /* 跟随重点色 */
+  color: #ffffff;
+  font-size: 18px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.35);
+  cursor: pointer;
+  z-index: 50;                          /* 保证浮在内容上面 */
+}
+
+/* ===== 全文搜索弹窗 ===== */
+
+.search-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.35);
+  backdrop-filter: blur(10px);
+  z-index: 55;
+}
+
+.search-modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 60;
+  pointer-events: none; /* 只让内部卡片接事件 */
+}
+
+.search-inner {
+  width: 90%;
+  max-width: 420px;
+  max-height: 80vh;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 22px 50px rgba(15, 23, 42, 0.35);
+  padding: 16px 18px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+/* 头部 */
+
+.search-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.search-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.search-close {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: none;
+  background: #e5e7eb;
+  color: #111827;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.search-close:active {
+  background: #d1d5db;
+}
+
+.search-desc {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 4px 0 6px;
+}
+
+/* 输入框 */
+
+.search-form {
+  margin-bottom: 2px;
+}
+
+.search-input {
+  width: 100%;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.9);
+  padding: 0 12px;
+  font-size: 13px;
+  outline: none;
+}
+
+.search-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent-soft);
+}
+
+/* 统计 + 结果 */
+
+.search-count {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.search-results {
+  margin-top: 4px;
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-right: 2px;
+}
+
+/* 每一条结果 */
+
+.search-result-card {
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.12);
+  padding: 8px 10px;
+  cursor: pointer;
+}
+
+.search-result-card:active {
+  transform: translateY(1px);
+  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.18);
+}
+
+.search-result-meta {
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.search-result-body {
+  font-size: 13px;
+  color: var(--text-primary);
+  line-height: 1.5;
+  white-space: pre-line;
+}
+
+.search-empty {
+  font-size: 13px;
+  color: var(--muted);
+  text-align: center;
+  padding: 24px 0 8px;
+}
+
+    </style>
+  </head>
+  <body>
+    <div id="app-root">
+      <!-- 顶部导航条 -->
+      <header class="top-bar">
+      <button class="icon-button icon-button-menu" id="btn-more" aria-label="更多">
+        三
+      </button>
+
+        <div class="top-title" id="top-title">Chat Calendar</div>
+        <button class="icon-button avatar-button" id="btn-profile" aria-label="个人设置">
+          <div class="avatar-circle">
+            <span class="avatar-glyph">🙂</span>
+          </div>
+        </button>
+      </header>
+
+      <!-- 主界面：日历视图 -->
+      <main class="screen screen-calendar" id="screen-calendar">
+        <!-- 背景层：整屏主题背景 -->
+        <div class="background-layer"></div>
+
+        <!-- 悬浮日历卡片 -->
+        <section class="card calendar-card">
+        <header class="card-header">
+  <div class="card-header-inner">
+    <div class="card-header-left">
+      <!-- ① 自定义日历标题：以后可以做成用户设置，现在先写死 -->
+      <div class="calendar-title" id="calendar-title">聊天日历</div>
+
+      <!-- ② 年月：由 JS 动态填进去 -->
+      <div class="month-label" id="month-label"></div>
+
+    </div>
+
+    <!-- 右侧上一月 / 下一月按钮 -->
+    <div class="card-header-nav">
+      <button
+        class="month-nav-btn"
+        id="btn-prev-month"
+        aria-label="上一月"
+        type="button"
+      >
+        &lt;
+      </button>
+      <button
+        class="month-nav-btn"
+        id="btn-next-month"
+        aria-label="下一月"
+        type="button"
+      >
+        &gt;
+      </button>
+    </div>
+  </div>
+</header>
+
+          <section class="card-body">
+            <div class="weekday-row" aria-hidden="true">
+              <span>SU</span>
+              <span>MO</span>
+              <span>TU</span>
+              <span>WE</span>
+              <span>TH</span>
+              <span>FR</span>
+              <span>SA</span>
+            </div>
+            <div class="calendar-grid" id="calendar-grid"></div>
+          </section>
+
+          <footer class="card-footer">
+            <div class="legend">
+              <span class="legend-item">
+                <span class="legend-swatch legend-selected"></span>
+                <span>点击按钮上传conversations.json文件</span>
+              </span>
+                         </div>
+
+            <!-- 右下导入按钮 -->
+            <button class="fab" id="btn-import" aria-label="导入聊天记录">
+              <span class="fab-plus">+</span>
+              <input type="file" id="file-input" accept=".json" hidden />
+            </button>
+          </footer>
+        </section>
+      </main>
+
+      <!-- 当日详情页 -->
+      <main class="screen screen-day" id="screen-day" hidden>
+        <header class="sub-header">
+          <button
+            class="icon-button back-button"
+            id="btn-back-calendar"
+            aria-label="返回日历"
+          >
+            <
+          </button>
+          <div class="sub-title" id="day-title">0000-00-00</div>
+        </header>
+
+        <section class="day-content" id="day-messages">
+          <!-- 在这里渲染当日 User / Assistant / System 气泡 -->
+        </section>
+      </main>
+
+         <!-- 底部弹出「更多」 -->
+      <div class="bottom-sheet-backdrop" id="sheet-backdrop" hidden></div>
+      <section class="bottom-sheet" id="bottom-sheet" hidden>
+        <div class="sheet-handle"></div>
+        <h2 class="sheet-title">更多功能</h2>
+        <button class="sheet-item" id="sheet-search">全文搜索</button>
+        <!-- 以后可以在这里继续加条目：统计 / 导出等 -->
+      </section>
+    </div>
+
+    <!-- 显示设置弹窗（点击头像打开） -->
+    <div class="settings-backdrop" id="settings-backdrop" hidden></div>
+    <section class="settings-modal" id="settings-modal" hidden>
+      <div class="settings-inner">
+        <header class="settings-header">
+          <div class="settings-title">显示设置</div>
+          <button
+            type="button"
+            class="settings-close"
+            id="settings-close"
+            aria-label="关闭"
+          >
+            ×
+          </button>
+        </header>
+
+        <p class="settings-desc">
+          这些设置只影响本地显示，不会修改原始聊天记录内容。
+        </p>
+
+        <form id="settings-form" class="settings-form">
+          <div class="settings-field">
+            <label class="settings-label" for="settings-user-name">
+              User 的名字
+            </label>
+            <input
+              id="settings-user-name"
+              class="settings-input"
+              type="text"
+              placeholder="例如：User"
+            />
+          </div>
+
+          <div class="settings-field">
+            <label class="settings-label" for="settings-assistant-name">
+              GPT 的名字
+            </label>
+            <input
+              id="settings-assistant-name"
+              class="settings-input"
+              type="text"
+              placeholder="例如：小机"
+            />
+          </div>
+
+          <div class="settings-field">
+            <label class="settings-label" for="settings-title">
+              顶部标题
+            </label>
+            <input
+              id="settings-title"
+              class="settings-input"
+              type="text"
+              placeholder="例如：某某的聊天日历"
+            />
+          </div>
+
+          <div class="settings-field">
+            <div class="settings-label">重点色</div>
+            <div class="settings-accent-options">
+              <button
+                type="button"
+                class="accent-swatch"
+                data-accent-key="black"
+                aria-label="黑色"
+              ></button>
+              <button
+                type="button"
+                class="accent-swatch"
+                data-accent-key="purple"
+                aria-label="紫色"
+              ></button>
+              <button
+                type="button"
+                class="accent-swatch"
+                data-accent-key="teal"
+                aria-label="蓝绿"
+              ></button>
+              <button
+                type="button"
+                class="accent-swatch"
+                data-accent-key="pink"
+                aria-label="粉色"
+              ></button>
+            </div>
+          </div>
+
+          <div class="settings-actions">
+            <button type="submit" class="settings-save">
+              保存
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- 全文搜索弹窗 -->
+    <div class="search-backdrop" id="search-backdrop" hidden></div>
+    <section class="search-modal" id="search-modal" hidden>
+      <div class="search-inner">
+        <header class="search-header">
+          <div class="search-title">全文搜索</div>
+          <button
+            type="button"
+            class="search-close"
+            id="search-close"
+            aria-label="关闭"
+          >
+            ×
+          </button>
+        </header>
+
+        <p class="search-desc">
+          在所有日期的聊天记录里按关键字查找，结果按时间排序。
+        </p>
+
+        <form id="search-form" class="search-form">
+          <input
+            id="search-input"
+            class="search-input"
+            type="text"
+            placeholder="输入关键词，例如：天气如何"
+          />
+        </form>
+
+        <div class="search-count" id="search-count"></div>
+        <div class="search-results" id="search-results"></div>
+      </div>
+    </section>
+
+    <!-- 右下角悬浮“回到日历”按钮 -->
+    <button
+      id="btn-back-floating"
+      class="back-floating"
+      type="button"
+      hidden
+    >
+      ‹
+    </button>
+
+    <!-- 只保留这一份脚本引用，并且放在最后 -->
+    <script>
+    // ========= 状态 =========
+const state = {
+  today: new Date(),
+  currentMonth: null,
+  selectedDate: null,
+  byDate: new Map(), // key: "YYYY-MM-DD" -> { messageCount, threadCount, messages }
+
+  // 显示设置
+  display: {
+    userName: "",
+    assistantName: "",
+    headerTitle: "November❤Night",
+    accentKey: "teal",
+  },
+};
+
+// ========= 元素引用 =========
+const el = {
+ btnBackFloating: document.getElementById("btn-back-floating"), // 悬浮返回键
+  monthLabel: document.getElementById("month-label"),
+  calendarGrid: document.getElementById("calendar-grid"),
+  screenCalendar: document.getElementById("screen-calendar"),
+  screenDay: document.getElementById("screen-day"),
+  dayTitle: document.getElementById("day-title"),
+  dayMessages: document.getElementById("day-messages"),
+
+  btnMore: document.getElementById("btn-more"),
+  btnProfile: document.getElementById("btn-profile"),
+  btnImport: document.getElementById("btn-import"),
+  fileInput: document.getElementById("file-input"),
+  btnBackCalendar: document.getElementById("btn-back-calendar"),
+  sheetBackdrop: document.getElementById("sheet-backdrop"),
+  bottomSheet: document.getElementById("bottom-sheet"),
+  sheetSearch: document.getElementById("sheet-search"),
+
+// 全文搜索弹窗
+  searchBackdrop: document.getElementById("search-backdrop"),
+  searchModal: document.getElementById("search-modal"),
+  searchClose: document.getElementById("search-close"),
+  searchForm: document.getElementById("search-form"),
+  searchInput: document.getElementById("search-input"),
+  searchCount: document.getElementById("search-count"),
+  searchResults: document.getElementById("search-results"),
+
+  calendarTitle: document.getElementById("calendar-title"),
+
+  // 显示设置弹窗
+  settingsBackdrop: document.getElementById("settings-backdrop"),
+  settingsModal: document.getElementById("settings-modal"),
+  settingsClose: document.getElementById("settings-close"),
+  settingsForm: document.getElementById("settings-form"),
+  settingsUserName: document.getElementById("settings-user-name"),
+  settingsAssistantName: document.getElementById("settings-assistant-name"),
+  settingsTitleInput: document.getElementById("settings-title"),
+  accentSwatches: document.querySelectorAll(".accent-swatch"),
+
+  // 月份翻页按钮
+  btnPrevMonth: document.getElementById("btn-prev-month"),
+  btnNextMonth: document.getElementById("btn-next-month"),
+};
+
+// ========= 重点色预设 =========
+const ACCENT_PRESETS = {
+  // 夜空蓝
+  black: {
+    accent: "#1e293b",
+    soft: "rgba(30, 41, 59, 0.14)",
+  },
+  // 葡萄紫
+  purple: {
+    accent: "#5C1A87",
+    soft: "rgba(99, 102, 241, 0.16)",
+  },
+  // 森林绿
+  teal: {
+    accent: "#0B6C5B",
+    soft: "rgba(20, 184, 166, 0.16)",
+  },
+  // 糖霜粉
+  pink: {
+    accent: "#ED778D",
+    soft: "rgba(251, 113, 133, 0.18)",
+  },
+};
+
+// ========= 日历逻辑 =========
+function renderMonthLabel() {
+  const { year, month } = state.currentMonth;
+  if (el.monthLabel) {
+    el.monthLabel.textContent = `${year}年${month + 1}月`;
+  }
+}
+
+function setCurrentMonth(date) {
+  const base = new Date(date.getFullYear(), date.getMonth(), 1);
+  state.currentMonth = {
+    year: base.getFullYear(),
+    month: base.getMonth(),
+  };
+  renderMonthLabel();
+  renderCalendar();
+}
+
+function changeMonth(delta) {
+  const { year, month } = state.currentMonth;
+  const newDate = new Date(year, month + delta, 1);
+  setCurrentMonth(newDate);
+}
+
+function showCalendarScreen() {
+  if (el.screenCalendar) el.screenCalendar.hidden = false;
+  if (el.screenDay) el.screenDay.hidden = true;
+
+  // 回到主界面时，隐藏悬浮按钮
+  if (el.btnBackFloating) {
+    el.btnBackFloating.hidden = true;
+  }
+}
+
+// ========= 聊天文本格式化 =========
+
+function escapeHtml(text) {
+  return String(text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+// 轻量级 Markdown 渲染：**粗体**、> 引用、`code`、换行
+function renderMessageHtml(raw) {
+  if (!raw) return "";
+
+  // 1) 先整体转义
+  let escaped = escapeHtml(raw);
+
+  // 2) 行级处理：识别以 > 开头的引用行
+  const lines = escaped.split(/\r?\n/).map((line) => {
+    // 转义后 ">" 变成了 "&gt;"
+    if (line.startsWith("&gt;")) {
+      const content = line.replace(/^&gt;\s*/, "");
+      return `<div class="msg-quote">${content}</div>`;
+    }
+    return line;
+  });
+
+  let html = lines.join("<br>");
+
+  // 3) 行内处理：粗体 / 斜体 / 行内代码
+  // **粗体**
+  html = html.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+
+  // *斜体*  （简单版，避免跟 ** 冲突）
+  html = html.replace(
+    /(^|[\s])\*(?!\s)(.+?)\*(?=\s|$)/g,
+    "$1<em>$2</em>"
+  );
+
+  // `code`
+  html = html.replace(/`([^`]+)`/g, "<code>$1</code>");
+
+  return html;
+}
+
+// ========= 当日聊天界面（气泡） =========
+function showDayScreen(dateKey) {
+  if (el.screenCalendar) el.screenCalendar.hidden = true;
+  if (el.screenDay) el.screenDay.hidden = false;
+
+  // 聊天界面显示悬浮按钮
+  if (el.btnBackFloating) {
+    el.btnBackFloating.hidden = false;
+  }
+
+  const stats = state.byDate.get(dateKey) || null;
+  el.dayMessages.innerHTML = "";
+
+  if (!stats || !Array.isArray(stats.messages) || stats.messages.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "empty-state";
+    empty.textContent = "这一天还没有聊天记录。";
+    el.dayMessages.appendChild(empty);
+    return;
+  }
+
+  const userLabel =
+    state.display.userName && state.display.userName.trim()
+      ? state.display.userName.trim()
+      : "User";
+
+  const assistantLabel =
+    state.display.assistantName && state.display.assistantName.trim()
+      ? state.display.assistantName.trim()
+      : "Assistant";
+
+  stats.messages.forEach((msg) => {
+    const role = msg.role || "assistant";
+
+    // 系统消息：中间灰条
+    if (role === "system") {
+      const row = document.createElement("div");
+      row.className = "bubble-row system";
+
+      const label = document.createElement("div");
+      label.className = "system-label";
+      label.innerHTML = renderMessageHtml(msg.content || "");
+      row.appendChild(label);
+
+      if (msg.time) {
+        const meta = document.createElement("div");
+        meta.className = "system-meta";
+        meta.textContent = msg.time;
+        row.appendChild(meta);
+      }
+
+      el.dayMessages.appendChild(row);
+      return;
+    }
+
+    // 普通对话：左助手 / 右用户
+    const row = document.createElement("div");
+    row.className = "bubble-row " + role;
+
+    const bubble = document.createElement("div");
+    bubble.className =
+      "bubble " + (role === "user" ? "bubble-user" : "bubble-assistant");
+
+    const textEl = document.createElement("div");
+    textEl.className = "bubble-text";
+    textEl.innerHTML = renderMessageHtml(msg.content || "");
+    bubble.appendChild(textEl);
+
+    // meta：名字 · 时间 · 会话
+    const meta = document.createElement("div");
+    meta.className = "bubble-meta";
+
+    const nameSpan = document.createElement("span");
+    nameSpan.className = "bubble-name";
+    nameSpan.textContent = role === "user" ? userLabel : assistantLabel;
+    meta.appendChild(nameSpan);
+
+    if (msg.time) {
+      const timeSpan = document.createElement("span");
+      timeSpan.className = "bubble-time";
+      timeSpan.textContent = msg.time;
+      meta.appendChild(timeSpan);
+    }
+
+    if (msg.threadTitle || msg.threadIndex != null) {
+      const threadSpan = document.createElement("span");
+      threadSpan.className = "bubble-thread";
+      threadSpan.textContent =
+        msg.threadTitle || `会话 ${Number(msg.threadIndex) + 1}`;
+      meta.appendChild(threadSpan);
+    }
+
+    bubble.appendChild(meta);
+    row.appendChild(bubble);
+    el.dayMessages.appendChild(row);
+  });
+}
+
+// ========= 渲染日历 =========
+function renderCalendar() {
+  const grid = el.calendarGrid;
+  if (!state.currentMonth || !grid) return;
+  const { year, month } = state.currentMonth;
+
+  grid.innerHTML = "";
+
+  const firstDay = new Date(year, month, 1);
+  const firstWeekday = firstDay.getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const totalCells = Math.ceil((firstWeekday + daysInMonth) / 7) * 7;
+
+  for (let index = 0; index < totalCells; index++) {
+    const cell = document.createElement("button");
+    cell.type = "button";
+    cell.className = "day-cell";
+
+    const dayNumber = index - firstWeekday + 1;
+
+    if (dayNumber < 1 || dayNumber > daysInMonth) {
+      cell.classList.add("empty");
+      grid.appendChild(cell);
+      continue;
+    }
+
+    const dateKey =
+      year +
+      "-" +
+      String(month + 1).padStart(2, "0") +
+      "-" +
+      String(dayNumber).padStart(2, "0");
+
+    const dateLabel = document.createElement("div");
+    dateLabel.className = "day-cell-date";
+    dateLabel.textContent = String(dayNumber);
+    cell.appendChild(dateLabel);
+
+    const countLabel = document.createElement("div");
+    countLabel.className = "day-cell-count";
+    const stats = state.byDate.get(dateKey);
+    if (stats && typeof stats.messageCount === "number") {
+      countLabel.textContent = stats.messageCount + " 条";
+    } else {
+      countLabel.textContent = "";
+    }
+    cell.appendChild(countLabel);
+
+    const dotWrap = document.createElement("div");
+    dotWrap.className = "day-cell-dot-wrapper";
+    const dot = document.createElement("div");
+    dot.className = "day-cell-dot";
+    if (stats && typeof stats.threadCount === "number") {
+      dot.textContent = stats.threadCount;
+    } else {
+      dot.textContent = "";
+    }
+    dotWrap.appendChild(dot);
+    cell.appendChild(dotWrap);
+
+    // 今天
+    if (
+      year === state.today.getFullYear() &&
+      month === state.today.getMonth() &&
+      dayNumber === state.today.getDate()
+    ) {
+      cell.classList.add("today");
+    }
+
+    // 选中态
+    if (state.selectedDate === dateKey) {
+      cell.classList.add("selected");
+    }
+
+    if (state.byDate.get(dateKey)) {
+      cell.classList.add("has-data");
+    }
+
+    cell.addEventListener("click", () => {
+      state.selectedDate = dateKey;
+      showDayScreen(dateKey);
+      renderCalendar();
+    });
+
+    grid.appendChild(cell);
+  }
+}
+
+// ========= 底部更多 =========
+function openSheet() {
+  el.sheetBackdrop.hidden = false;
+  el.bottomSheet.hidden = false;
+}
+
+function closeSheet() {
+  el.sheetBackdrop.hidden = true;
+  el.bottomSheet.hidden = true;
+}
+
+// ========= 显示设置 & 重点色 =========
+function applyDisplaySettings() {
+  const { display } = state;
+
+  if (el.calendarTitle) {
+    el.calendarTitle.textContent =
+      display.headerTitle && display.headerTitle.trim()
+        ? display.headerTitle.trim()
+        : "November❤Night";
+  }
+
+  const preset = ACCENT_PRESETS[display.accentKey] || ACCENT_PRESETS.teal;
+  const root = document.documentElement;
+  root.style.setProperty("--accent", preset.accent);
+  root.style.setProperty("--accent-soft", preset.soft);
+
+  if (el.accentSwatches && el.accentSwatches.forEach) {
+    el.accentSwatches.forEach((btn) => {
+      const key = btn.getAttribute("data-accent-key");
+      if (key === display.accentKey) {
+        btn.classList.add("selected");
+      } else {
+        btn.classList.remove("selected");
+      }
+    });
+  }
+}
+
+function fillSettingsForm() {
+  const { display } = state;
+  if (el.settingsUserName) {
+    el.settingsUserName.value = display.userName || "";
+  }
+  if (el.settingsAssistantName) {
+    el.settingsAssistantName.value = display.assistantName || "";
+  }
+  if (el.settingsTitleInput) {
+    el.settingsTitleInput.value = display.headerTitle || "";
+  }
+}
+
+function openSettings() {
+  fillSettingsForm();
+  if (el.settingsBackdrop) el.settingsBackdrop.hidden = false;
+  if (el.settingsModal) el.settingsModal.hidden = false;
+}
+
+function closeSettings() {
+  if (el.settingsBackdrop) el.settingsBackdrop.hidden = true;
+  if (el.settingsModal) el.settingsModal.hidden = true;
+}
+
+function saveDisplaySettingsFromForm() {
+  if (el.settingsUserName) {
+    state.display.userName = el.settingsUserName.value.trim();
+  }
+  if (el.settingsAssistantName) {
+    state.display.assistantName = el.settingsAssistantName.value.trim();
+  }
+  if (el.settingsTitleInput) {
+    state.display.headerTitle = el.settingsTitleInput.value.trim();
+  }
+
+  try {
+    localStorage.setItem(
+      "chat-calendar-display",
+      JSON.stringify(state.display)
+    );
+  } catch (err) {
+    console.warn("无法保存到 localStorage：", err);
+  }
+
+  applyDisplaySettings();
+}
+
+function loadDisplaySettingsFromStorage() {
+  try {
+    const raw = localStorage.getItem("chat-calendar-display");
+    if (!raw) return;
+    const parsed = JSON.parse(raw);
+    state.display = {
+      ...state.display,
+      ...parsed,
+    };
+  } catch (err) {
+    console.warn("读取 localStorage 失败：", err);
+  }
+}
+
+// ========= 解析 conversations.json =========
+
+function parseChatExport(text) {
+  let raw;
+  try {
+    raw = JSON.parse(text);
+  } catch (err) {
+    throw new Error("JSON 解析失败，请确认是 conversations.json 文件。");
+  }
+
+  let conversations;
+  if (Array.isArray(raw)) {
+    conversations = raw;
+  } else if (Array.isArray(raw.conversations)) {
+    conversations = raw.conversations;
+  } else {
+    throw new Error("未找到 conversations 数组，暂时不支持这种导出格式。");
+  }
+
+  const byDate = new Map();
+  const globalThreadIds = new Set();
+  let totalMessages = 0;
+  let latestMs = 0;
+
+  function ensureStats(dateKey) {
+    if (!byDate.has(dateKey)) {
+      byDate.set(dateKey, {
+        messageCount: 0,
+        threadCount: 0,
+        threadIds: new Set(),
+        messages: [],
+      });
+    }
+    return byDate.get(dateKey);
+  }
+
+  function normalizeTimestamp(ts, fallbackMs) {
+    if (typeof ts === "number") {
+      // 小于 1e12 当秒，大于当毫秒
+      return ts < 1e12 ? ts * 1000 : ts;
+    }
+    if (typeof ts === "string") {
+      const d = new Date(ts);
+      const ms = d.getTime();
+      if (!Number.isNaN(ms)) return ms;
+    }
+    return fallbackMs || Date.now();
+  }
+
+  function extractTextFromMessageContent(content) {
+    if (!content) return "";
+    if (typeof content === "string") return content;
+
+    // ChatGPT 导出格式：{ content_type: "text", parts: ["...", "..."] }
+    if (Array.isArray(content.parts)) {
+      return content.parts.join("\n\n");
+    }
+    if (typeof content.text === "string") {
+      return content.text;
+    }
+    return "";
+  }
+
+  conversations.forEach((conv, convIndex) => {
+    const threadIndex = convIndex;
+    const threadTitle = conv.title || `会话 ${threadIndex + 1}`;
+
+    const collected = [];
+
+    if (conv.mapping && typeof conv.mapping === "object") {
+      Object.values(conv.mapping).forEach((node) => {
+        if (!node || !node.message) return;
+        const m = node.message;
+        if (!m.author || !m.author.role) return;
+
+        const role = m.author.role; // user | assistant | system | tool ...
+        if (role === "tool") return;
+
+        const text = extractTextFromMessageContent(m.content);
+        if (!text) return;
+
+        let ts =
+          m.create_time ??
+          m.update_time ??
+          node.create_time ??
+          conv.create_time ??
+          conv.update_time;
+
+        const ms = normalizeTimestamp(ts, Date.now());
+
+        collected.push({
+          role,
+          text,
+          ms,
+        });
+      });
+    } else if (Array.isArray(conv.messages)) {
+      conv.messages.forEach((m) => {
+        if (!m || !m.author || !m.author.role) return;
+        const role = m.author.role;
+        if (role === "tool") return;
+
+        const text = extractTextFromMessageContent(m.content || m);
+        if (!text) return;
+
+        const ms = normalizeTimestamp(
+          m.create_time ?? m.update_time ?? conv.create_time ?? conv.update_time,
+          Date.now()
+        );
+
+        collected.push({
+          role,
+          text,
+          ms,
+        });
+      });
+    }
+
+    // 时间排序
+    collected.sort((a, b) => a.ms - b.ms);
+
+    collected.forEach((item) => {
+      const dateObj = new Date(item.ms);
+      const y = dateObj.getFullYear();
+      const m = dateObj.getMonth() + 1;
+      const d = dateObj.getDate();
+
+      const dateKey =
+        y +
+        "-" +
+        String(m).padStart(2, "0") +
+        "-" +
+        String(d).padStart(2, "0");
+
+      const timeStr =
+        String(dateObj.getHours()).padStart(2, "0") +
+        ":" +
+        String(dateObj.getMinutes()).padStart(2, "0") +
+        ":" +
+        String(dateObj.getSeconds()).padStart(2, "0");
+
+      const stats = ensureStats(dateKey);
+      stats.messageCount += 1;
+      stats.threadIds.add(threadIndex);
+      globalThreadIds.add(threadIndex);
+      totalMessages += 1;
+
+      if (item.ms > latestMs) latestMs = item.ms;
+
+      stats.messages.push({
+        role:
+          item.role === "system"
+            ? "system"
+            : item.role === "user"
+            ? "user"
+            : "assistant",
+        content: item.text,
+        time: timeStr,
+        threadTitle,
+        threadIndex,
+        _ms: item.ms,
+      });
+    });
+  });
+
+  // 收尾：threadCount / 排序 / 清理临时字段
+  for (const [dateKey, stats] of byDate.entries()) {
+    stats.threadCount = stats.threadIds.size;
+    stats.threadIds = undefined;
+    stats.messages.sort((a, b) => a._ms - b._ms);
+    stats.messages.forEach((m) => {
+      delete m._ms;
+    });
+  }
+
+  return {
+    byDate,
+    dayCount: byDate.size,
+    messageCount: totalMessages,
+    threadCount: globalThreadIds.size,
+    latestMs,
+  };
+}
+
+// ========= 全文搜索 =========
+
+function openSearchModal() {
+  if (!el.searchBackdrop || !el.searchModal) return;
+
+  el.searchBackdrop.hidden = false;
+  el.searchModal.hidden = false;
+
+  if (el.searchInput) {
+    el.searchInput.value = "";
+    el.searchInput.focus();
+  }
+  if (el.searchCount) {
+    el.searchCount.textContent = "在所有解析完成的聊天记录中搜索。";
+  }
+  if (el.searchResults) {
+    el.searchResults.innerHTML = "";
+  }
+}
+
+function closeSearchModal() {
+  if (el.searchBackdrop) el.searchBackdrop.hidden = true;
+  if (el.searchModal) el.searchModal.hidden = true;
+}
+
+function runFullTextSearch(rawQuery) {
+  const q = (rawQuery || "").trim();
+  if (!el.searchCount || !el.searchResults) return;
+
+  if (!q) {
+    el.searchCount.textContent = "请输入关键词开始搜索。";
+    el.searchResults.innerHTML = "";
+    return;
+  }
+
+  if (!state.byDate || state.byDate.size === 0) {
+    el.searchCount.textContent =
+      "还没有解析任何聊天记录，请先在主界面导入 conversations.json。";
+    el.searchResults.innerHTML = "";
+    return;
+  }
+
+  const needle = q.toLowerCase();
+  const results = [];
+
+  for (const [dateKey, stats] of state.byDate.entries()) {
+    if (!stats || !Array.isArray(stats.messages)) continue;
+
+    stats.messages.forEach((msg) => {
+      const text = msg.content || "";
+      if (!text) return;
+
+      if (text.toLowerCase().includes(needle)) {
+        results.push({
+          dateKey,
+          time: msg.time || "",
+          role: msg.role || "assistant",
+          threadTitle: msg.threadTitle || "",
+          threadIndex: msg.threadIndex,
+          text,
+        });
+      }
+    });
+  }
+
+  // 按日期 + 时间字符串排序（YYYY-MM-DD HH:MM:SS）
+  results.sort((a, b) => {
+    const ak = `${a.dateKey} ${a.time || ""}`;
+    const bk = `${b.dateKey} ${b.time || ""}`;
+    if (ak < bk) return -1;
+    if (ak > bk) return 1;
+    return 0;
+  });
+
+  el.searchResults.innerHTML = "";
+
+  if (!results.length) {
+    el.searchCount.textContent = `没有找到关于「${q}」的内容。`;
+    const empty = document.createElement("div");
+    empty.className = "search-empty";
+    empty.textContent = "可以尝试换一个关键词。";
+    el.searchResults.appendChild(empty);
+    return;
+  }
+
+  const userName =
+    state.display.userName && state.display.userName.trim()
+      ? state.display.userName.trim()
+      : "User";
+  const assistantName =
+    state.display.assistantName && state.display.assistantName.trim()
+      ? state.display.assistantName.trim()
+      : "Assistant";
+
+  el.searchCount.textContent = `共 ${results.length} 条匹配结果`;
+
+  results.forEach((item) => {
+    const card = document.createElement("article");
+    card.className = "search-result-card";
+
+    const meta = document.createElement("div");
+    meta.className = "search-result-meta";
+
+    let roleLabel = "";
+    if (item.role === "user") {
+      roleLabel = userName;
+    } else if (item.role === "assistant") {
+      roleLabel = assistantName;
+    } else {
+      roleLabel = "系统";
+    }
+
+    const pieces = [item.dateKey];
+    if (item.time) pieces.push(item.time);
+    pieces.push(roleLabel);
+    if (item.threadTitle) pieces.push(item.threadTitle);
+
+    meta.textContent = pieces.join(" · ");
+    card.appendChild(meta);
+
+    const body = document.createElement("div");
+    body.className = "search-result-body";
+    body.textContent = item.text;
+    card.appendChild(body);
+
+    // 点击结果：关闭搜索，跳到对应日期
+    card.addEventListener("click", () => {
+      closeSearchModal();
+      state.selectedDate = item.dateKey;
+      renderCalendar();
+      showDayScreen(item.dateKey);
+    });
+
+    el.searchResults.appendChild(card);
+  });
+}
+
+// ========= 事件绑定 =========
+function initEvents() {
+  if (el.btnBackCalendar) {
+    el.btnBackCalendar.addEventListener("click", showCalendarScreen);
+  }
+
+  if (el.btnMore) {
+    el.btnMore.addEventListener("click", openSheet);
+  }
+  if (el.sheetBackdrop) {
+    el.sheetBackdrop.addEventListener("click", closeSheet);
+  }
+   if (el.sheetSearch) {
+    el.sheetSearch.addEventListener("click", () => {
+      closeSheet();
+      openSearchModal();
+    });
+  }
+
+  // 全文搜索弹窗：关闭 & 提交
+  if (el.searchBackdrop) {
+    el.searchBackdrop.addEventListener("click", closeSearchModal);
+  }
+  if (el.searchClose) {
+    el.searchClose.addEventListener("click", closeSearchModal);
+  }
+  if (el.searchForm && el.searchInput) {
+    el.searchForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      runFullTextSearch(el.searchInput.value || "");
+    });
+  }
+
+  // 导入 conversations.json
+  if (el.btnImport && el.fileInput) {
+    el.btnImport.addEventListener("click", () => {
+      el.fileInput.value = "";
+      el.fileInput.click();
+    });
+
+    el.fileInput.addEventListener("change", (event) => {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const text = String(reader.result || "");
+          const result = parseChatExport(text);
+
+          state.byDate = result.byDate;
+          state.selectedDate = null;
+
+          if (result.latestMs) {
+            const latestDate = new Date(result.latestMs);
+            setCurrentMonth(latestDate);
+          } else {
+            setCurrentMonth(state.today);
+          }
+
+          alert(
+            `解析完成：${result.dayCount} 天，${result.messageCount} 条消息，${result.threadCount} 个会话。`
+          );
+        } catch (err) {
+          console.error(err);
+          alert("解析文件时出错：" + err.message);
+        }
+      };
+      reader.readAsText(file, "utf-8");
+    });
+  }
+
+  if (el.btnProfile) {
+    el.btnProfile.addEventListener("click", openSettings);
+  }
+  if (el.settingsBackdrop) {
+    el.settingsBackdrop.addEventListener("click", closeSettings);
+  }
+  if (el.settingsClose) {
+    el.settingsClose.addEventListener("click", closeSettings);
+  }
+  if (el.settingsForm) {
+    el.settingsForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      saveDisplaySettingsFromForm();
+      closeSettings();
+    });
+  }
+
+  if (el.accentSwatches && el.accentSwatches.forEach) {
+    el.accentSwatches.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const key = btn.getAttribute("data-accent-key");
+        state.display.accentKey = key;
+        applyDisplaySettings();
+      });
+    });
+  }
+
+  // 悬浮“回到日历”按钮
+  if (el.btnBackFloating) {
+    el.btnBackFloating.addEventListener("click", showCalendarScreen);
+  }
+
+  if (el.btnPrevMonth) {
+    el.btnPrevMonth.addEventListener("click", () => changeMonth(-1));
+  }
+  if (el.btnNextMonth) {
+    el.btnNextMonth.addEventListener("click", () => changeMonth(1));
+  }
+}
+
+// ========= 启动 =========
+function bootstrap() {
+  const base = state.today;
+  setCurrentMonth(base);
+
+  loadDisplaySettingsFromStorage();
+  applyDisplaySettings();
+
+  initEvents();
+}
+
+bootstrap();
+    </script>
+  </body>
+</html>

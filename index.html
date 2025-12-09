@@ -7,7 +7,7 @@
       name="viewport"
       content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"
     />
-    <meta name="theme-color" content="#020617" />
+    <meta name="theme-color" content="#ffffff" />
     <link rel="manifest" href="manifest.json" />
     <link rel="icon" href="icon-192.png" />
 
@@ -1123,9 +1123,10 @@ body {
   position: absolute;
   top: -10px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.95);
-  box-shadow: 0 0 6px rgba(255, 255, 255, 0.9);
-  opacity: 0.9;
+  background: rgba(255, 255, 255, 0.98);           /* 更白一点 */
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.95);  /* 发光更强 */
+  opacity: 1;
+  filter: blur(0.3px);                             /* 微微糊一点，像雪片 */
   animation-name: snow-fall;
   animation-timing-function: linear;
   animation-iteration-count: infinite;
@@ -2206,12 +2207,14 @@ function initEvents() {
   }
 
   // 导入 conversations.json
+
   if (el.btnImport && el.fileInput) {
     el.btnImport.addEventListener("click", () => {
       el.fileInput.value = "";
       el.fileInput.click();
     });
 
+    // 这里整块替换成新的版本（去掉“解析完成”alert）
     el.fileInput.addEventListener("change", (event) => {
       const file = event.target.files && event.target.files[0];
       if (!file) return;
@@ -2232,9 +2235,12 @@ function initEvents() {
             setCurrentMonth(state.today);
           }
 
-          alert(
-            `解析完成：${result.dayCount} 天，${result.messageCount} 条消息，${result.threadCount} 个会话。`
-          );
+          // 这里原来有一个 alert 提示“解析完成：X天、Y条消息...”
+          // 样式和整套 UI 不一致，我们去掉它，不影响功能
+          // 如果以后想看统计，可以在控制台里打印：
+          // console.log(
+          //   `解析完成：${result.dayCount} 天，${result.messageCount} 条消息，${result.threadCount} 个会话。`
+          // );
         } catch (err) {
           console.error(err);
           alert("解析文件时出错：" + err.message);
@@ -2290,22 +2296,24 @@ function initSnowEffect() {
   snowLayer.className = "snow-layer";
   document.body.appendChild(snowLayer);
 
-  const snowCount = 80;              // 雪花数量，卡的话可以改小一点，比如 40
+  const snowCount = 120;              // ❶ 雪花数量：更多一点（卡的话可以改回 80）
   const vw = window.innerWidth;
 
   for (let i = 0; i < snowCount; i++) {
     const flake = document.createElement("div");
     flake.className = "snowflake";
 
-    const size = 2 + Math.random() * 4;  // 2 ~ 6 像素的小圆点
+    // ❷ 雪花尺寸：6 ~ 12 像素，比原来明显
+    const size = 6 + Math.random() * 6;
     flake.style.width = size + "px";
     flake.style.height = size + "px";
 
     const startLeft = Math.random() * vw;
     flake.style.left = startLeft + "px";
 
-    const duration = 8 + Math.random() * 8;   // 8 ~ 16 秒落到底
-    const delay = Math.random() * 10;         // 0 ~ 10 秒随机起步
+    // ❸ 掉落时间：12 ~ 22 秒，更慢
+    const duration = 12 + Math.random() * 10;
+    const delay = Math.random() * 12;
     flake.style.animationDuration = duration + "s";
     flake.style.animationDelay = delay + "s";
 

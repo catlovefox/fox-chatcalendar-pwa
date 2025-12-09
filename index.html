@@ -1110,7 +1110,40 @@ body {
   text-align: center;
   padding: 24px 0 8px;
 }
+/* ===== 下雪特效 ===== */
+.snow-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;         /* 不挡你点按钮 */
+  z-index: 8;                   /* 在界面上方，下雪盖在 UI 前面 */
+  overflow: hidden;
+}
 
+.snowflake {
+  position: absolute;
+  top: -10px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.9);
+  opacity: 0.9;
+  animation-name: snow-fall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+@keyframes snow-fall {
+  0% {
+    transform: translate3d(0, -10px, 0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate3d(20px, 110vh, 0);
+    opacity: 0;
+  }
+}
     </style>
   </head>
   <body>
@@ -2251,6 +2284,35 @@ function initEvents() {
   }
 }
 
+// ===== 下雪特效 =====
+function initSnowEffect() {
+  const snowLayer = document.createElement("div");
+  snowLayer.className = "snow-layer";
+  document.body.appendChild(snowLayer);
+
+  const snowCount = 80;              // 雪花数量，卡的话可以改小一点，比如 40
+  const vw = window.innerWidth;
+
+  for (let i = 0; i < snowCount; i++) {
+    const flake = document.createElement("div");
+    flake.className = "snowflake";
+
+    const size = 2 + Math.random() * 4;  // 2 ~ 6 像素的小圆点
+    flake.style.width = size + "px";
+    flake.style.height = size + "px";
+
+    const startLeft = Math.random() * vw;
+    flake.style.left = startLeft + "px";
+
+    const duration = 8 + Math.random() * 8;   // 8 ~ 16 秒落到底
+    const delay = Math.random() * 10;         // 0 ~ 10 秒随机起步
+    flake.style.animationDuration = duration + "s";
+    flake.style.animationDelay = delay + "s";
+
+    snowLayer.appendChild(flake);
+  }
+}
+
 // ========= 启动 =========
 function bootstrap() {
   const base = state.today;
@@ -2260,6 +2322,7 @@ function bootstrap() {
   applyDisplaySettings();
 
   initEvents();
+  initSnowEffect();   // ★ 在这里开启下雪
 }
 
 bootstrap();

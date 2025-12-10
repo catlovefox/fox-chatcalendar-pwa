@@ -1462,7 +1462,7 @@ const state = {
   display: {
     userName: "",
     assistantName: "",
-    headerTitle: "November❤Night",
+    headerTitle: "聊天日历",
     accentKey: "teal",
   },
 };
@@ -1824,7 +1824,7 @@ function applyDisplaySettings() {
     el.calendarTitle.textContent =
       display.headerTitle && display.headerTitle.trim()
         ? display.headerTitle.trim()
-        : "November❤Night";
+        : "请按右上角❤修改自定义";
   }
 
   const preset = ACCENT_PRESETS[display.accentKey] || ACCENT_PRESETS.teal;

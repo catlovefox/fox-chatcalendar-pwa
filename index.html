@@ -133,9 +133,12 @@ body {
 
 /* 屏幕容器 */
 
-.screen {
-  min-height: 100vh;
+.screen{
+  height: 100vh;
+  height: 100dvh;           /* 移动端更稳 */
+  box-sizing: border-box;   /* 关键：padding 算进高度里 */
   padding-top: var(--top-bar-height);
+  min-height: 0;            /* 防止被 min-height 顶开 */
 }
 
 .screen-calendar {
@@ -480,10 +483,10 @@ body {
 
 /* 当日详情页 */
 
-.screen-day {
-  background: linear-gradient(180deg, var(--bg-gradient-top), var(--bg-gradient-bottom));
+.screen-day{
   display: flex;
   flex-direction: column;
+  overflow: hidden; /* 只让内部 day-content 滚动 */
 }
 
 .sub-header {
@@ -583,9 +586,8 @@ body {
 .screen-day {
   background: linear-gradient(180deg, #f3f4f6 0%, #ffffff 18%);
   /* 让它刚好占满 top-bar 下面的整块区域 */
-  min-height: calc(100vh - var(--top-bar-height));
-  height: calc(100vh - var(--top-bar-height));
-  display: flex;
+  /* 由 .screen 负责撑满视口高度（避免底部多出一条空白） */
+display: flex;
   flex-direction: column;
   overflow: hidden; /* 只让内部 day-content 滚动 */
 }
@@ -1138,6 +1140,19 @@ body {
   padding: 24px 0 8px;
 }
 
+/* ✅ 全文搜索：对齐赞踩记录——居中 + 统一高度区间 */
+#search-modal{
+  align-items: center;            /* 跟 #feedback-modal 一样居中 */
+}
+
+#search-modal .search-inner{
+  margin-top: 0;                  /* 取消原来的 8vh 上边距 */
+  max-height: 80vh;               /* 跟赞踩记录一致 */
+  min-height: 30vh;               /* 跟赞踩记录一致：未加载时不再扁 */
+  display: flex;
+  flex-direction: column;
+}
+
 /* ===== 赞踩记录弹窗 ===== */
 
 .feedback-inner {
@@ -1243,6 +1258,20 @@ body {
   gap: 6px;
 }
 
+/* ✅ 赞踩记录：未加载（容器为空）时，不显示那几条分隔线 */
+#feedback-modal .feedback-stats:empty{
+  border-top: 0;
+  border-bottom: 0;
+  padding: 0;
+  margin-top: 0;
+}
+
+#feedback-modal .feedback-list:empty{
+  border-top: 0;
+  padding-top: 0;
+  margin-top: 0;
+}
+
 .feedback-item {
   padding: 6px 8px;
   border-radius: 10px;
@@ -1258,7 +1287,7 @@ body {
 }
 
 .feedback-item-title {
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 500;
   color: var(--text-primary);
   display: inline-flex;
@@ -1346,8 +1375,6 @@ body {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
 }
-
-
 
 /* 当日聊天框 Tabs：保留横向滚动，但隐藏滚动条（避免底部出现白色“模块”） */
 .day-tabs {
@@ -1945,7 +1972,7 @@ function renderDayTabs(dateKey, stats) {
     state.dayThreadIndex == null ? "__all__" : String(state.dayThreadIndex);
 
   const parts = [];
-  parts.push(`<span class="day-tabs-label">当日聊天框</span>`);
+  parts.push(``);
 
   const allActiveClass = activeKey === "__all__" ? "is-active" : "";
   parts.push(
@@ -2361,18 +2388,19 @@ function parseFeedbackJson(text) {
         "rating"
       );
 
-      if (hasUpdateTime) {
+      if (hasUpdateTime && hasRating) {
         const updateTime = node["update_time"];
-        const rating = hasRating ? node["rating"] : null;
-
-        entries.push({
-          evalName: localEvalName || "",
-          updateTime,
-          rating,
-        });
+        const rating = node["rating"];
+        // 仅接受合法的点赞 / 点踩
+        if (rating === "thumbs_up" || rating === "thumbs_down") {
+          entries.push({
+            evalName: localEvalName || "",
+            updateTime,
+            rating,
+          });
+        }
       }
-
-      for (const key in node) {
+for (const key in node) {
         if (Object.prototype.hasOwnProperty.call(node, key)) {
           traverse(node[key], localEvalName);
         }

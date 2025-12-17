@@ -69,8 +69,9 @@ body {
   align-items: center;
   justify-content: space-between;
   padding: 0 var(--safe-horizontal);
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(18px);
+  background: #ffffff;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   border-bottom: 1px solid rgba(15, 23, 42, 0.06);
   z-index: 10;
 }
@@ -173,14 +174,12 @@ body {
 
 /* 顶部蓝色头部整块 */
 .card-header {
-  background: rgba(255, 255, 255, 0.72);   /* 原来的#EEF9FF + 半透明 */
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.35);                 /* ← 头部底色：在这里换颜色 */
   border-bottom: 1px solid rgba(15, 23, 42, 0.06);
-  min-height: 90px;
+  min-height: 90px;                    /* ← 头部高度，想更矮/更高自己改 */
   padding: 0 16px;
-  display: flex;
-  align-items: center;
+  display: flex;                       /* 让整个头部成为 flex 容器 */
+  align-items: center;                 /* 垂直居中里面所有内容 */
 }
 
 /* 里面的左右结构：左边文字 / 右边按钮 */
@@ -1666,7 +1665,7 @@ display: flex;
         <h2 class="sheet-title">更多功能</h2>
         <button class="sheet-item" id="sheet-search">全文搜索</button>
         <button class="sheet-item" id="sheet-feedback">赞踩记录</button>
-        <button class="sheet-item" id="sheet-export">按日期导出</button>
+        <button class="sheet-item" id="sheet-export">日历导出</button>
         <!-- 以后可以在这里继续加条目：统计 / 导出等 -->
       </section>
     </div>
@@ -1794,7 +1793,7 @@ display: flex;
               aria-label="背景预览"
             ></div>
             <div class="settings-hint">
-              建议选择9:16的图片。会自动压缩并保存在本地，不会上传。
+              建议选9:16 的图片。会自动压缩并保存在本地，不会上传。
             </div>
           </div>
 
@@ -1888,12 +1887,12 @@ display: flex;
       </div>
     </section>
 
-    <!-- 按日期导出弹窗 -->
+    <!-- 日历导出弹窗 -->
     <div class="search-backdrop" id="export-backdrop" hidden></div>
     <section class="search-modal" id="export-modal" hidden>
       <div class="search-inner">
         <header class="search-header">
-          <div class="search-title">按日期导出</div>
+          <div class="search-title">日历导出</div>
           <button
             type="button"
             class="search-close"
@@ -2006,7 +2005,7 @@ const el = {
   feedbackStats: document.getElementById("feedback-stats"),
   feedbackList: document.getElementById("feedback-list"),
 
-  // 按日期导出弹窗
+  // 日历导出弹窗
   exportBackdrop: document.getElementById("export-backdrop"),
   exportModal: document.getElementById("export-modal"),
   exportClose: document.getElementById("export-close"),
@@ -3261,7 +3260,7 @@ function runFullTextSearch(rawQuery) {
 }
 
 
-// ========= 按日期剪裁导出 =========
+// ========= 日历剪裁导出 =========
 
 function getDateKeyBounds() {
   if (!state.byDate || !(state.byDate instanceof Map) || state.byDate.size === 0) return null;
